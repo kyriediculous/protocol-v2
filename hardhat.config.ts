@@ -1,10 +1,14 @@
-import { HardhatUserConfig } from "hardhat/types";
-
 // plug-ins
 import "@nomiclabs/hardhat-ethers"
-import "@nomiclabs/hardhat-waffle";
-import "hardhat-typechain";
-import "@nomiclabs/hardhat-etherscan"
+import "@nomiclabs/hardhat-web3"
+import "@nomiclabs/hardhat-waffle"
+import "hardhat-typechain"
+
+import "@nomiclabs/hardhat-etherscan";
+import "hardhat-docgen";
+
+import { HardhatUserConfig } from "hardhat/types";
+
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -27,5 +31,10 @@ const config: HardhatUserConfig = {
     // API key for https://etherscan.io/
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
+  docgen: {
+    path: './docs',
+    clear: true,
+    runOnCompile: true,
+  }
 };
 export default config;

@@ -10,11 +10,14 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 library MathUtils {
     using SafeMath for uint256;
 
-    // Divisor used for representing percentages
+    /**
+     * @notice precision used for MathUtils
+     * @return PERC_DIVISOR precision
+     */
     uint256 public constant PERC_DIVISOR = 10 ** 27;
 
     /**
-     * @dev Returns whether an amount is a valid percentage out of PERC_DIVISOR
+     * @notice Returns whether an amount is a valid percentage out of PERC_DIVISOR
      * @param _amount Amount that is supposed to be a percentage
      */
     function validPerc(uint256 _amount) internal pure returns (bool) {
@@ -22,7 +25,7 @@ library MathUtils {
     }
 
     /**
-     * @dev Compute percentage of a value with the percentage represented by a fraction
+     * @notice Compute percentage of a value with the percentage represented by a fraction
      * @param _amount Amount to take the percentage of
      * @param _fracNum Numerator of fraction representing the percentage
      * @param _fracDenom Denominator of fraction representing the percentage
@@ -32,7 +35,7 @@ library MathUtils {
     }
 
     /**
-     * @dev Compute percentage of a value with the percentage represented by a fraction over PERC_DIVISOR
+     * @notice Compute percentage of a value with the percentage represented by a fraction over PERC_DIVISOR
      * @param _amount Amount to take the percentage of
      * @param _fracNum Numerator of fraction representing the percentage with PERC_DIVISOR as the denominator
      */
@@ -41,7 +44,7 @@ library MathUtils {
     }
 
     /**
-     * @dev Compute percentage representation of a fraction
+     * @notice Compute percentage representation of a fraction
      * @param _fracNum Numerator of fraction represeting the percentage
      * @param _fracDenom Denominator of fraction represeting the percentage
      */

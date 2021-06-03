@@ -1,8 +1,13 @@
 # `Delegations`
 
-## Overview 
+## Overview
 
-WIP
+`Delegations` is a Solidity library that handles accounting logic for a stake based protocol whereby users can stake tokens and earn rewards in that tokens as well as fees in another token or ETH.
+
+The implementation details and actual handling of funds transfer is left to the implementer of the library so the library is token standard agnostic.
+
+The library used **share-based accounting** whereby a nominal amount of shares represent an intrinsic amount of stake (including rewards) and protocol fees. Meaning that while the amount of shares a user holds can remain unchanged, the amount of stake and fees it represent can fluctuate as rewards/fees are earned or the delegate's stake is slashed.  
+
 
 ## Data Structures
 
@@ -42,7 +47,7 @@ Stake an amount of tokens in the pool. Calculates the amount of shares to mint b
 
 ### `unstake(struct Delegations.Pool _pool, address _delegator, uint256 _amount)` (internal)
 
-Unstake an amount of tokens from the pool. Calculates the maount of shares to burn based on the current amount of total stake and outstanding shares. Burns the calculated amount of shares from the delegator and subtracts the unstaked amount from the pool's total stake.
+Unstake an amount of tokens from the pool. Calculates the amount of shares to burn based on the current amount of total stake and outstanding shares. Burns the calculated amount of shares from the delegator and subtracts the unstaked amount from the pool's total stake.
 
 #### Parameters
 

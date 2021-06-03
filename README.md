@@ -18,6 +18,8 @@ Compile the contracts
 yarn run compile
 ```
 
+# `Delegations`
+
 ## Overview
 
 `Delegations` is a Solidity library that handles accounting logic for a stake based protocol whereby users can stake tokens and earn rewards in that tokens as well as fees in another token or ETH.
@@ -25,6 +27,7 @@ yarn run compile
 The implementation details and actual handling of funds transfer is left to the implementer of the library so the library is token standard agnostic.
 
 The library used **share-based accounting** whereby a nominal amount of shares represent an intrinsic amount of stake (including rewards) and protocol fees. Meaning that while the amount of shares a user holds can remain unchanged, the amount of stake and fees it represent can fluctuate as rewards/fees are earned or the delegate's stake is slashed.  
+
 
 ## Data Structures
 
@@ -64,7 +67,7 @@ Stake an amount of tokens in the pool. Calculates the amount of shares to mint b
 
 ### `unstake(struct Delegations.Pool _pool, address _delegator, uint256 _amount)` (internal)
 
-Unstake an amount of tokens from the pool. Calculates the maount of shares to burn based on the current amount of total stake and outstanding shares. Burns the calculated amount of shares from the delegator and subtracts the unstaked amount from the pool's total stake.
+Unstake an amount of tokens from the pool. Calculates the amount of shares to burn based on the current amount of total stake and outstanding shares. Burns the calculated amount of shares from the delegator and subtracts the unstaked amount from the pool's total stake.
 
 #### Parameters
 
@@ -74,7 +77,7 @@ Unstake an amount of tokens from the pool. Calculates the maount of shares to bu
 | `_delegator`| `address`|ddress of the delegator that is unstaking from the pool|
 |`_amount`|`uint256`|amount of tokens being unstaked by the delegator|
 
-### `addRewards(struct Delegations.Pool _pool, uint256 _amount) → uint256 stake` (internal)
+### `addRewards(struct Delegations.Pool _pool, uint256 _amount) → uint256 totalStake` (internal)
 
 Add rewards to the delegation pool, increases the total stake in the pool by the specified amount. Returns the new amount of total stake in the pool.
 
@@ -89,7 +92,7 @@ Add rewards to the delegation pool, increases the total stake in the pool by the
 
 | Return Value | type | description |
 |-----------|------|-------------|
-|`stake`|`uint256`| new total stake in the delegation pool|
+|`totalStake`|`uint256`| new total stake in the delegation pool|
 
 ### `mintShares(struct Delegations.Pool _pool, address _delegator, uint256 _amount)` (internal)
 
@@ -198,6 +201,26 @@ Returns the amount of claimable fees from a delegation pool for a delegator. Cal
 
 | Parameter | type | description |
 |-----------|------|-------------|
+|`fees`|`uint256`|fees claimable from the delegation pool for the delegator|
+
+### `stakeAndFeesOf(struct Delegations.Pool _pool, address _delegator) → uint256 stake, uint256 fees` (internal)
+
+Returns the amount of stake as well as claimable fees from a delegation pool for a delegator.
+
+More gas efficient to use when fetching both a delegator's stake and fees.
+
+#### Parameters
+
+| Parameter | type | description |
+|-----------|------|-------------|
+| `_pool`|`Delegations.Pool`|  storage pointer to the delegation pool|
+|`_delegator`|`address`|address of the delegator|
+
+#### Return Values
+
+| Parameter | type | description |
+|-----------|------|-------------|
+|`stake`|`uint256`|stake of the delegator|
 |`fees`|`uint256`|fees claimable from the delegation pool for the delegator|
 
 ### `tokensToShares(struct Delegations.Pool _pool, uint256 _tokens) → uint256 shares` (internal)

@@ -18,8 +18,6 @@ Compile the contracts
 yarn run compile
 ```
 
-# `Delegations`
-
 ## Overview
 
 `Delegations` is a Solidity library that handles accounting logic for a stake based protocol whereby users can stake tokens and earn rewards in that tokens as well as fees in another token or ETH.

@@ -1,4 +1,4 @@
-// // SPDX-FileCopyrightText: 2020 Tenderize <info@tenderize.me>
+// // SPDX-FileCopyrightText: 2021 Livepeer <nico@livepeer.org>
 
 // // SPDX-License-Identifier: GPL-3.0
 

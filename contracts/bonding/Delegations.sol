@@ -1,5 +1,4 @@
-// // SPDX-FileCopyrightText: 2020 Tenderize <info@tenderize.me>
-
+// // SPDX-FileCopyrightText: 2021 Livepeer <nico@livepeer.org>
 // // SPDX-License-Identifier: GPL-3.0
 
 // /* See contracts/COMPILERS.md */
@@ -21,7 +20,7 @@ library Delegations {
     using SafeMath for uint256;
 
     /**
-     @notice Delegation
+     @notice Delegation holds the necessary info for delegations to a delegation pool
      */
     struct Delegation {
         uint256 shares; // nominal amount of shares held by the Delegation
@@ -29,7 +28,7 @@ library Delegations {
     }
 
     /**
-     @notice Pool
+     @notice A delegation pool accrues delegator rewards and fees for an orchestrator and handles accounting
      */
     struct Pool {
         uint256 totalShares; // total amount of outstanding shares

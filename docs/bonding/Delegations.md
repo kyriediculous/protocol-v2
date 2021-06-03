@@ -57,7 +57,7 @@ Unstake an amount of tokens from the pool. Calculates the amount of shares to bu
 | `_delegator`| `address`|ddress of the delegator that is unstaking from the pool|
 |`_amount`|`uint256`|amount of tokens being unstaked by the delegator|
 
-### `addRewards(struct Delegations.Pool _pool, uint256 _amount) → uint256 stake` (internal)
+### `addRewards(struct Delegations.Pool _pool, uint256 _amount) → uint256 totalStake` (internal)
 
 Add rewards to the delegation pool, increases the total stake in the pool by the specified amount. Returns the new amount of total stake in the pool.
 
@@ -72,7 +72,7 @@ Add rewards to the delegation pool, increases the total stake in the pool by the
 
 | Return Value | type | description |
 |-----------|------|-------------|
-|`stake`|`uint256`| new total stake in the delegation pool|
+|`totalStake`|`uint256`| new total stake in the delegation pool|
 
 ### `mintShares(struct Delegations.Pool _pool, address _delegator, uint256 _amount)` (internal)
 
@@ -181,6 +181,26 @@ Returns the amount of claimable fees from a delegation pool for a delegator. Cal
 
 | Parameter | type | description |
 |-----------|------|-------------|
+|`fees`|`uint256`|fees claimable from the delegation pool for the delegator|
+
+### `stakeAndFeesOf(struct Delegations.Pool _pool, address _delegator) → uint256 stake, uint256 fees` (internal)
+
+Returns the amount of stake as well as claimable fees from a delegation pool for a delegator.
+
+More gas efficient to use when fetching both a delegator's stake and fees.
+
+#### Parameters
+
+| Parameter | type | description |
+|-----------|------|-------------|
+| `_pool`|`Delegations.Pool`|  storage pointer to the delegation pool|
+|`_delegator`|`address`|address of the delegator|
+
+#### Return Values
+
+| Parameter | type | description |
+|-----------|------|-------------|
+|`stake`|`uint256`|stake of the delegator|
 |`fees`|`uint256`|fees claimable from the delegation pool for the delegator|
 
 ### `tokensToShares(struct Delegations.Pool _pool, uint256 _tokens) → uint256 shares` (internal)

@@ -126,10 +126,10 @@ library Delegations {
      * @dev Sum of principal and staking rewards
      * @param _pool storage pointer to the delegation pool
      * @param _delegator address of the delegator
-     * @return totalStake total stake of the delegator
+     * @return stake total stake of the delegator
      */
-    function stakeOf(Pool storage _pool, address _delegator) internal view returns (uint256 totalStake) {
-        totalStake = MathUtils.percOf(_pool.totalStake, _pool.delegations[_delegator].shares, _pool.totalShares);
+    function stakeOf(Pool storage _pool, address _delegator) internal view returns (uint256 stake) {
+        stake = MathUtils.percOf(_pool.totalStake, _pool.delegations[_delegator].shares, _pool.totalShares);
     }
 
     /**
@@ -153,6 +153,24 @@ library Delegations {
         uint256 feeCheckpoint = delegation.feeCheckpoint;
         uint256 availableFees = _pool.fees.sub(feeCheckpoint);
         fees = MathUtils.percOf(availableFees, delegation.shares, _pool.totalShares);
+    }
+
+    /**
+     * @param _pool storage pointer to the delegation pool
+     * @param _delegator address of the delegator
+     * @return stake of the delegator
+     * @return fees claimable from the delegation pool for the delegator
+     */
+    function stakeAndFeesOf(Pool storage _pool, address _delegator) internal view returns (uint256 stake, uint256 fees) {
+        Delegation storage delegation = _pool.delegations[_delegator];
+        uint256 shares = delegation.shares;
+        uint256 totalShares = _pool.totalShares;
+
+        stake = MathUtils.percOf(_pool.totalStake, shares, totalShares);
+
+        uint256 feeCheckpoint = delegation.feeCheckpoint;
+        uint256 availableFees = _pool.fees.sub(feeCheckpoint);
+        fees = MathUtils.percOf(availableFees, shares, totalShares);
     }
 
     /**

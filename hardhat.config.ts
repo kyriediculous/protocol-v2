@@ -5,7 +5,6 @@ import "@nomiclabs/hardhat-waffle"
 import "hardhat-typechain"
 
 import "@nomiclabs/hardhat-etherscan";
-import "hardhat-docgen";
 
 import { HardhatUserConfig } from "hardhat/types";
 
@@ -31,10 +30,8 @@ const config: HardhatUserConfig = {
     // API key for https://etherscan.io/
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
-  docgen: {
-    path: './docs',
-    clear: true,
-    runOnCompile: true,
-  }
+  // typechain: {
+  //   outDir: "types",
+  // },
 };
 export default config;

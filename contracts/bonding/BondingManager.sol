@@ -45,6 +45,13 @@ contract BondingManager {
 
     mapping(bytes32 => UnbondingLock) unbondingLocks;
 
+    /**
+     * @notice Updates orchestrator with assigned rewards
+     * @dev Calculates the orchestrator's reward commission based on its reward share and assigns it to the orchestrator
+     * @dev Calculates the amount of tokens to assign to the delegation pool based on the reward amount and the orchestrator's reward share
+     * @dev Adds the calculated amount to the delegation pool, updating DelegationPool.totalStake
+     * @dev This in turn increases the amount of LPT represented by a nominal share amount held by delegators
+     */
     function updateOrchestratorWithRewards(address _orchestrator, uint256 _rewards) internal {
         Orchestrator storage orch = orchestrators[_orchestrator];
 
@@ -54,6 +61,13 @@ contract BondingManager {
         orch.delegationPool.addRewards(rewardShare);
     }
 
+    /**
+     * @notice Updates orchestrator with fees from a redeemed winning ticket
+     * @dev Calculates the orchestrator's fee commission based on its fee share and assigns it to the orchestrator
+     * @dev Calculates the amount fees to assign to the delegation pool based on the fee amount and the orchestrator's fee share
+     * @dev Adds the calculated amount to the delegation pool, updating DelegationPool.fees
+     * @dev This in turn increases the amount of total fees in the delegation pool, increases the individual fees calculated from the nominal amount of shares held by a delegator
+     */
     function updateOrchestratorWithFees(address _orchestrator, uint256 _fees) internal {
         Orchestrator storage orch = orchestrators[_orchestrator];
 
@@ -63,6 +77,14 @@ contract BondingManager {
         orch.delegationPool.addFees(feeShare);
     }
 
+    /**
+     * @notice Calculate the total stake for an address
+     * @dev Calculates the amount of tokens represented by the address' share of the delegation pool
+     * @dev If the address is an orchestrator, add its commission
+     * @dev NOTE: currently doesn't support multi-delegation
+     * @dev Delegators don't need support fetching on-chain stake directly, so for multi-delegation we can do calculations off chain
+        and repurpose this to 'orchestratorStake(address _orchestrator)'
+     */
     function stakeOf(address _of) public view returns (uint256 stake) {
         address delegate = delegators[_of].orchestrator;
         Orchestrator storage orch = orchestrators[delegate];
@@ -71,6 +93,14 @@ contract BondingManager {
         stake = delegatorStake.add(orchRewardCommissions);
     }
 
+    /**
+     * @notice Calculate the withdrawable fees for an address
+     * @dev Calculates the amount of ETH fees represented by the address' share of the delegation pool and its last fee checkpoint
+     * @dev If the address is an orchestrator, add its commission
+     * @dev NOTE: currently doesn't support multi-delegation
+     * @dev Delegators don't need support fetching on-chain fees directly, so for multi-delegation we can do calculations off chain
+        and repurpose this to 'orchestratorFees(address _orchestrator)'
+     */
     function feesOf(address _of) public view returns (uint256 fees) {
         address delegate = delegators[_of].orchestrator;
         Orchestrator storage orch = orchestrators[delegate];
@@ -79,16 +109,30 @@ contract BondingManager {
         fees = delegatorFees.add(orchFeeCommissions);
     }
 
+    /**
+     * @notice Withdraw fees for an address
+     * @dev Calculates amount of fees to claim using `feesOf`
+     * @dev Updates Delegation.feeCheckpoint for the address to the current total amount of fees in the delegation pool
+     * @dev If the claimer is an orchestator, reset its commission
+     * @dev Transfer funds
+     * @dev NOTE: currently doesn't support multi-delegation, would have to add an orchestrator address param
+     */
     function claimFees(address payable _for) internal {
         address delegate = delegators[_for].orchestrator;
         Orchestrator storage orch = orchestrators[delegate];
         uint256 fees = orch.delegationPool.claimFees(_for);
         if (_for == delegate) {
             fees = fees.add(orch.feeCommissions);
+            orch.feeCommissions = 0;
         }
         _for.transfer(fees);
     }
 
+    /**
+     * @notice Bond tokens to an orchestrator, updates the delegation for the address on the orchestrator's delegation pool
+     * @dev claims any outstanding fees to update the fees checkpoint for the _delegator, this ensures other delegator's fees don't get diluted
+     * @dev 'purchases' shares of the delegation pool based on the current share price (totalShares/totalStake)
+     */
     function bond(address _orchestrator, address payable _delegator, uint256 _amount) internal {
         // Claim any outstanding fees
         claimFees(_delegator);
@@ -110,6 +154,11 @@ contract BondingManager {
         newPool.stake(_delegator, totalToStake);
     }
 
+    /**
+     * @notice Unbond tokens from an orchestrator, updates the delegation for the address on the orchestrator's delegation pool
+     * @dev claims any outstanding fees to update the fees checkpoint for the _delegator, this ensures other delegator's fees don't get diluted
+     * @dev 'sells' shares of the delegation pool based on the current share price (totalShares/totalStake)
+     */
     function unbond(address payable _delegator, uint256 _amount) internal {
         // Claim any outstanding fees
         claimFees(_delegator);

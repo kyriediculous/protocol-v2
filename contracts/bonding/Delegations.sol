@@ -24,7 +24,7 @@ library Delegations {
      */
     struct Delegation {
         uint256 shares; // nominal amount of shares held by the Delegation
-        uint256 feeCheckpoint; // amount of fees in the pool after last claim
+        uint256 lastCFF; // amount of fees in the pool after last claim
     }
 
     /**
@@ -32,9 +32,9 @@ library Delegations {
      */
     struct Pool {
         uint256 totalShares; // total amount of outstanding shares
-
+        uint256 activeFeeShares; // amount of shares active for fees
         uint256 totalStake; // total amount of tokens held by the EarningsPool
-        uint256 fees; // total amount of available fees (claimed or unclaimed, but not withdrawn)
+        uint256 CFF; // total amount of available fees (claimed or unclaimed, but not withdrawn)
 
         // mapping of a delegate's address to a Delegation
         mapping (address => Delegation) delegations;
@@ -80,6 +80,7 @@ library Delegations {
      * @param _pool storage pointer to the delegation pool
      * @param _delegator address of the delegator to mint shares for
      * @param _amount amount of shares to mint
+     * @dev updates totalShares used for stake accounting but not activeFeeShares for fee accounting
      */
     function mintShares(Pool storage _pool, address _delegator, uint256 _amount) internal {
         _pool.delegations[_delegator].shares = _pool.delegations[_delegator].shares.add(_amount);
@@ -95,6 +96,7 @@ library Delegations {
     function burnShares(Pool storage _pool, address _delegator, uint256 _amount) internal {
         _pool.delegations[_delegator].shares = _pool.delegations[_delegator].shares.sub(_amount);
         _pool.totalShares = _pool.totalShares.sub(_amount);
+        _pool.activeFeeShares -= _amount;
     }
 
     /**
@@ -104,8 +106,9 @@ library Delegations {
      * @return fees new total amount of fees in the delegation pool
      */
     function addFees(Pool storage _pool, uint256 _amount) internal returns (uint256 fees) {
-        fees = _pool.fees.add(_amount);
-        _pool.fees = fees;
+        uint256 activeFeeShares = _pool.activeFeeShares;
+        _pool.activeFeeShares = _pool.totalShares;
+        _pool.CFF += MathUtils.percPoints(_amount, activeFeeShares);
     }
 
     /**
@@ -117,7 +120,9 @@ library Delegations {
      */
     function claimFees(Pool storage _pool, address _delegator) internal returns (uint256 claimedFees) {
         claimedFees = feesOf(_pool, _delegator);
-        _pool.delegations[_delegator].feeCheckpoint = _pool.fees;
+
+        // Checkpoint CFF
+        _pool.delegations[_delegator].lastCFF = _pool.CFF;
     }
 
     /**
@@ -149,9 +154,13 @@ library Delegations {
      */
     function feesOf(Pool storage _pool, address _delegator) internal view returns (uint256 fees) {
         Delegation storage delegation = _pool.delegations[_delegator];
-        uint256 feeCheckpoint = delegation.feeCheckpoint;
-        uint256 availableFees = _pool.fees.sub(feeCheckpoint);
-        fees = MathUtils.percOf(availableFees, delegation.shares, _pool.totalShares);
+
+        uint256 currentCFF = _pool.CFF;
+
+        // If CFF is 0 there are no rewards, return early to avoid division by 0
+        if (currentCFF == 0) return 0;
+
+        fees = currentCFF != 0 ? MathUtils.percOf(delegation.shares, currentCFF - delegation.lastCFF) : 0;
     }
 
     /**
@@ -167,9 +176,9 @@ library Delegations {
 
         stake = MathUtils.percOf(_pool.totalStake, shares, totalShares);
 
-        uint256 feeCheckpoint = delegation.feeCheckpoint;
-        uint256 availableFees = _pool.fees.sub(feeCheckpoint);
-        fees = MathUtils.percOf(availableFees, shares, totalShares);
+        uint256 currentCFF = _pool.CFF;
+
+        fees = currentCFF != 0 ? MathUtils.percOf(delegation.shares, currentCFF - delegation.lastCFF) : 0;
     }
 
     /**

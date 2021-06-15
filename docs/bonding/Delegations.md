@@ -6,8 +6,31 @@
 
 The implementation details and actual handling of funds transfer is left to the implementer of the library so the library is token standard agnostic.
 
-The library used **share-based accounting** whereby a nominal amount of shares represent an intrinsic amount of stake (including rewards) and protocol fees. Meaning that while the amount of shares a user holds can remain unchanged, the amount of stake and fees it represent can fluctuate as rewards/fees are earned or the delegate's stake is slashed.  
+### Share-based accounting
 
+The library used **share-based accounting** whereby a nominal amount of shares represent an intrinsic amount of stake (including rewards) and protocol fees. Meaning that while the amount of shares a user holds can remain unchanged, the amount of stake and fees it represent can fluctuate as rewards/fees are earned or the delegate's stake is slashed.
+
+The conversion between token amounts and share amount is done using the share price which is expressed as `totalStake / totalShares`. Since staking rewards can increase the stake without increasing the total amount of shares this ratio can diverge away from 1.
+
+### Cumulative Fee Factor
+
+Tracking two different balances (of a different asset even) based on the same share structure poses some issues because the assets don't share the same accounting rules. To correctly account for fees we re-introduce a modified version of **cumulative fee factors** as first described in [LIP-36](https://forum.livepeer.org/t/a-more-gas-efficient-earnings-calculation-approach/1097). In plain english this value allows us to calculate the delegator's share of the increase in fees since the delegator last claimed fees.
+
+The calculations can be simplified further when using share-based accounting, obfuscating the need for a cumulative reward factor (based on stake) for correct calculations.
+
+When a winning ticket comes in the new cumulative fee factor can be calculated as
+
+```
+CFF = previousCFF + (fees / activeFeeShares)
+```
+
+A delegator's available fees can be calculated as follows
+
+```
+fees = delegatorShares * (currentCFF - delegator.lastCFF)
+```
+
+An example integration of the library along with a run-down can be found [here](#example-bondingmanager-integration)
 
 ## Data Structures
 
@@ -18,7 +41,7 @@ Delegation holds the necessary info for delegations to a delegation pool
 | Value | type | description |
 |-----------|------|-------------|
 | `shares`| `uint256`|nominal amount of shares held by the delegation|
-|`feeCheckpoint`|`uint256`|amount of fees in the pool after last claim by the delegator|
+|`lastCFF`|`uint256`|cumulative fee factor during last accounting update|
 
 ### `Pool`
 
@@ -27,8 +50,9 @@ A delegation pool accrues delegator rewards and fees for an orchestrator and han
 | Value | type | description |
 |-----------|------|-------------|
 | `totalShares`| `uint256`|total amount of outstanding shares in the delegation pool|
+| `activeFeeShares`| `uint256`|portion of total shares eligible for fees, this value is set to totalShares when new fees are added|
 |`totalStake`|`uint256`|total amount of tokens held by the EarningsPool|
-|`fees`|`uint256`|total amount of available fees (claimed or unclaimed, but not withdrawn)|
+|`CFF`|`uint256`|the current cumulmative fee factor|
 |`delegations`|`mapping (address => Delegation)`|mapping of a delegator's address to a delegation|
 
 ## API
@@ -36,6 +60,7 @@ A delegation pool accrues delegator rewards and fees for an orchestrator and han
 ### `stake(struct Delegations.Pool _pool, address _delegator, uint256 _amount)` (internal)
 
 Stake an amount of tokens in the pool. Calculates the amount of shares to mint based on the current amount of total stake and outstanding shares. Mints the calculated amount of shares for the delegator and adds the staked amount to the pool's total stake.
+
 
 #### Parameters
 
@@ -77,6 +102,8 @@ Add rewards to the delegation pool, increases the total stake in the pool by the
 ### `mintShares(struct Delegations.Pool _pool, address _delegator, uint256 _amount)` (internal)
 
 Mint a specified amount of new shares for the delegator. Increases the delegator's delegation share amount and total shares.
+
+**NOTE:** Updates totalShares used for stake accounting but not activeFeeShares for fee accounting.
 
 | Parameter | type | description |
 |-----------|------|-------------|

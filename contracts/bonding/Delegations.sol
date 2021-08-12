@@ -11,9 +11,17 @@ import "../utils/MathUtils.sol";
 /**
  * @title Delegations
  * @author Nico Vergauwen (@kyriediculous)
- * @notice Delegations is a Solidity library that handles accounting logic for a stake based protocol whereby users can stake tokens and earn rewards in that tokens as well as fees in another token or ETH.
-The implementation details and actual handling of funds transfer is left to the implementer of the library so the library is token standard agnostic.
-The library usedshare-based accounting whereby a nominal amount of shares represent an intrinsic amount of stake (including rewards) and protocol fees. Meaning that while the amount of shares a user holds can remain unchanged, the amount of stake and fees it represent can fluctuate as rewards/fees are earned or the delegate's stake is slashed.
+ * @notice Delegations is a Solidity library that handles accounting logic for a stake based protocol whereby users
+    can stake tokens and earn rewards in that tokens as well as fees in another token or ETH.
+    
+    The implementation details and actual handling of funds transfer is left to the implementer
+        of the library so the library is token standard agnostic.
+    
+    The library uses share-based accounting whereby a nominal amount of shares represent 
+        an intrinsic amount of stake (including rewards) and protocol fees. Meaning that
+        while the amount of shares a user holds can remain unchanged, the amount of stake
+        and fees it represent can fluctuate as rewards/fees are earned or the delegate's 
+        stake is slashed.
  */
 
 library Delegations {
@@ -35,37 +43,49 @@ library Delegations {
         uint256 activeFeeShares; // amount of shares active for fees
         uint256 totalStake; // total amount of tokens held by the EarningsPool
         uint256 CFF; // total amount of available fees (claimed or unclaimed, but not withdrawn)
-
         // mapping of a delegate's address to a Delegation
-        mapping (address => Delegation) delegations;
+        mapping(address => Delegation) delegations;
     }
 
     /**
-     * @notice Stake an amount of tokens in the pool. Calculates the amount of shares to mint based on the current amount of total stake and outstanding shares. Mints the calculated amount of shares for the delegator and adds the staked amount to the pool's total stake.
+     * @notice Stake an amount of tokens in the pool. Calculates the amount of shares to mint based on the current
+        amount of total stake and outstanding shares. Mints the calculated amount of shares for the delegator 
+        and adds the staked amount to the pool's total stake.
      * @param _pool storage pointer to the delegation pool
      * @param _delegator address of the delegator that is staking to the pool
      * @param _amount amount of tokens being staked by the delegator
      */
-    function stake(Pool storage _pool, address _delegator, uint256 _amount) internal {
+    function stake(
+        Pool storage _pool,
+        address _delegator,
+        uint256 _amount
+    ) internal {
         uint256 sharesToMint = tokensToShares(_pool, _amount);
         mintShares(_pool, _delegator, sharesToMint);
         _pool.totalStake = _pool.totalStake.add(_amount);
     }
 
     /**
-     * @notice Unstake an amount of tokens from the pool. Calculates the maount of shares to burn based on the current amount of total stake and outstanding shares. Burns the calculated amount of shares from the delegator and subtracts the unstaked amount from the pool's total stake.
+     * @notice Unstake an amount of tokens from the pool. Calculates the maount of shares to burn based on the current
+        amount of total stake and outstanding shares. Burns the calculated amount of shares from the delegator 
+        and subtracts the unstaked amount from the pool's total stake.
      * @param _pool storage pointer to the delegation pool
      * @param _delegator address of the delegator that is unstaking from the pool
      * @param _amount amount of tokens being unstaked by the delegator
      */
-    function unstake(Pool storage _pool, address _delegator, uint256 _amount) internal {
+    function unstake(
+        Pool storage _pool,
+        address _delegator,
+        uint256 _amount
+    ) internal {
         uint256 sharesToBurn = tokensToShares(_pool, _amount);
         burnShares(_pool, _delegator, sharesToBurn);
         _pool.totalStake = _pool.totalStake.sub(_amount);
     }
 
     /**
-     * @notice Add rewards to the delegation pool, increases the total stake in the pool by the specified amount. Returns the new amount of total stake in the pool.
+     * @notice Add rewards to the delegation pool, increases the total stake in the pool by the specified amount. 
+        Returns the new amount of total stake in the pool.
      * @param _pool storage pointer to the delegation pool
      * @param _amount amount of tokens to add to the total stake
      * @return totalStake new total stake in the delegation pool
@@ -76,31 +96,42 @@ library Delegations {
     }
 
     /**
-     * @notice Mint a specified amount of new shares for the delegator. Increases the delegator's delegation share amount and total shares.
+     * @notice Mint a specified amount of new shares for the delegator.
+        Increases the delegator's delegation share amount and total shares.
      * @param _pool storage pointer to the delegation pool
      * @param _delegator address of the delegator to mint shares for
      * @param _amount amount of shares to mint
      * @dev updates totalShares used for stake accounting but not activeFeeShares for fee accounting
      */
-    function mintShares(Pool storage _pool, address _delegator, uint256 _amount) internal {
+    function mintShares(
+        Pool storage _pool,
+        address _delegator,
+        uint256 _amount
+    ) internal {
         _pool.delegations[_delegator].shares = _pool.delegations[_delegator].shares.add(_amount);
         _pool.totalShares = _pool.totalShares.add(_amount);
     }
 
     /**
-     * @notice Burn existing shares from a delegator. Subtracts the amount of shares to burn from the delegator's delegation and decreases the amount of total shares.
+     * @notice Burn existing shares from a delegator. 
+        Subtracts the amount of shares to burn from the delegator's delegation and decreases the amount of total shares.
      * @param _pool storage pointer to the delegation pool
      * @param _delegator address of the delegator to burn shares from
      * @param _amount amount of shares to burn
      */
-    function burnShares(Pool storage _pool, address _delegator, uint256 _amount) internal {
+    function burnShares(
+        Pool storage _pool,
+        address _delegator,
+        uint256 _amount
+    ) internal {
         _pool.delegations[_delegator].shares = _pool.delegations[_delegator].shares.sub(_amount);
         _pool.totalShares = _pool.totalShares.sub(_amount);
         _pool.activeFeeShares -= _amount;
     }
 
     /**
-     * @notice Add fees to the delegation pool, increases the fees by the specified amount and returns the new total amount of fees earned by the pool.
+     * @notice Add fees to the delegation pool.
+        Increases the fees by the specified amount and returns the new total amount of fees earned by the pool.
      * @param _pool storage pointer to the delegation pool
      * @param _amount amount of fees to add to the pool
      * @return fees new total amount of fees in the delegation pool
@@ -113,7 +144,8 @@ library Delegations {
 
     /**
      * @notice Claim all available fees for a delegator from the delegation pool, returns the claimable amount.
-     * @dev This only handles state updates to the delegation pool, actual transferring of funds should be handled by the caller
+     * @dev This only handles state updates to the delegation pool, 
+        actual transferring of funds should be handled by the caller
      * @param _pool storage pointer to the delegation pool
      * @param _delegator address of the delegator to claim fees for
      * @return claimedFees amount of fees claimed
@@ -169,7 +201,11 @@ library Delegations {
      * @return stake of the delegator
      * @return fees claimable from the delegation pool for the delegator
      */
-    function stakeAndFeesOf(Pool storage _pool, address _delegator) internal view returns (uint256 stake, uint256 fees) {
+    function stakeAndFeesOf(Pool storage _pool, address _delegator)
+        internal
+        view
+        returns (uint256 stake, uint256 fees)
+    {
         Delegation storage delegation = _pool.delegations[_delegator];
         uint256 shares = delegation.shares;
         uint256 totalShares = _pool.totalShares;
@@ -179,6 +215,15 @@ library Delegations {
         uint256 currentCFF = _pool.CFF;
 
         fees = currentCFF != 0 ? MathUtils.percOf(delegation.shares, currentCFF - delegation.lastCFF) : 0;
+    }
+
+    /**
+     * @notice Returns the total stake in the delegation pool
+     * @param _pool storage pointer to the delegation pool
+     * @return total stake in the pool
+     */
+    function totalStake(Pool storage _pool) internal view returns (uint256) {
+        return _pool.totalStake;
     }
 
     /**
@@ -210,7 +255,7 @@ library Delegations {
      */
     function sharesToTokens(Pool storage _pool, uint256 _shares) internal view returns (uint256 tokens) {
         uint256 totalShares = _pool.totalShares;
-        if ( totalShares == 0) {
+        if (totalShares == 0) {
             return 0;
         }
 

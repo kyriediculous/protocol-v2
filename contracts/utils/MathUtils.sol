@@ -14,7 +14,7 @@ library MathUtils {
      * @notice precision used for MathUtils
      * @return PERC_DIVISOR precision
      */
-    uint256 public constant PERC_DIVISOR = 10 ** 27;
+    uint256 public constant PERC_DIVISOR = 10**27;
 
     /**
      * @notice Returns whether an amount is a valid percentage out of PERC_DIVISOR
@@ -30,7 +30,11 @@ library MathUtils {
      * @param _fracNum Numerator of fraction representing the percentage
      * @param _fracDenom Denominator of fraction representing the percentage
      */
-    function percOf(uint256 _amount, uint256 _fracNum, uint256 _fracDenom) internal pure returns (uint256) {
+    function percOf(
+        uint256 _amount,
+        uint256 _fracNum,
+        uint256 _fracDenom
+    ) internal pure returns (uint256) {
         return _amount.mul(percPoints(_fracNum, _fracDenom)).div(PERC_DIVISOR);
     }
 
